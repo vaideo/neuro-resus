@@ -80,8 +80,9 @@
       { key:'treatment',       label:'Treatment',       placeholder:'Medicines, dosage, frequency, duration' },
       { key:'advice',          label:'Advice',          placeholder:'Lifestyle advice, follow-up date, warnings' },
     ];
-    const EMPTY_RX = { clinicName:'', doctorName:'', doctorReg:'', date:'', name:'', age:'', gender:'',
+    const EMPTY_RX = { patientId:'', date:'', name:'', age:'', gender:'',
       history:'', examination:'', diagnosis:'', investigations:'', treatment:'', advice:'' };
+    const sanitizeForFilename = (value) => value.trim().replace(/[^a-zA-Z0-9-_]+/g, '_').replace(/^_+|_+$/g, '');
 
     /* ── Main App ────────────────────────────────────────────────────────── */
     function App() {
@@ -111,10 +112,17 @@
         return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
       };
       const handlePrintRx = () => {
+        const pid = sanitizeForFilename(rx.patientId || '');
+        const jobName = pid ? `Prescription_${pid}` : 'Prescription';
         if (window.AndroidPrint && window.AndroidPrint.print) {
-          window.AndroidPrint.print();
+          window.AndroidPrint.print(jobName);
         } else {
+          const originalTitle = document.title;
+          const restore = () => { document.title = originalTitle; window.removeEventListener('afterprint', restore); };
+          document.title = jobName;
+          window.addEventListener('afterprint', restore);
           window.print();
+          setTimeout(restore, 3000);
         }
       };
 
@@ -641,23 +649,13 @@
                   <p className="text-slate-500 text-sm">Enter patient details, preview, and print</p>
 
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
-                    <h3 className="font-semibold text-slate-800 text-sm">Clinic / Doctor</h3>
-                    <input type="text" placeholder="Clinic / Hospital Name" value={rx.clinicName}
-                      onChange={e=>updateRx('clinicName', e.target.value)}
-                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="text" placeholder="Doctor Name" value={rx.doctorName}
-                        onChange={e=>updateRx('doctorName', e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-                      <input type="text" placeholder="Reg. No / Qualification" value={rx.doctorReg}
-                        onChange={e=>updateRx('doctorReg', e.target.value)}
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
                     <h3 className="font-semibold text-slate-800 text-sm">Patient Details</h3>
                     <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-slate-500 font-medium">Patient ID</label>
+                        <input type="text" placeholder="e.g. PT-00123" value={rx.patientId} onChange={e=>updateRx('patientId', e.target.value)}
+                          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                      </div>
                       <div>
                         <label className="text-xs text-slate-500 font-medium">Date</label>
                         <input type="date" value={rx.date} onChange={e=>updateRx('date', e.target.value)}
@@ -673,7 +671,7 @@
                         <input type="text" placeholder="e.g. 45 yrs" value={rx.age} onChange={e=>updateRx('age', e.target.value)}
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <label className="text-xs text-slate-500 font-medium">Gender</label>
                         <select value={rx.gender} onChange={e=>updateRx('gender', e.target.value)}
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -710,15 +708,8 @@
                   <div>
                     <h3 className="font-semibold text-slate-800 text-sm mb-2">Preview</h3>
                     <div id="rx-print-area" className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                      <div className="flex justify-between items-start border-b-4 border-blue-600 pb-3 mb-4">
-                        <p className="text-lg font-bold text-blue-700 leading-tight">{rx.clinicName || 'Clinic / Hospital Name'}</p>
-                        <div className="text-right text-xs text-slate-500">
-                          <div className="text-sm font-bold text-slate-900">{rx.doctorName || 'Doctor Name'}</div>
-                          <div>{rx.doctorReg}</div>
-                        </div>
-                      </div>
-
                       <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 text-sm">
+                        <div><span className="block text-[10px] uppercase text-slate-400">Patient ID</span><span className="font-semibold">{rx.patientId || '-'}</span></div>
                         <div><span className="block text-[10px] uppercase text-slate-400">Date</span><span className="font-semibold">{formatRxDate(rx.date)}</span></div>
                         <div><span className="block text-[10px] uppercase text-slate-400">Name</span><span className="font-semibold">{rx.name || '-'}</span></div>
                         <div><span className="block text-[10px] uppercase text-slate-400">Age</span><span className="font-semibold">{rx.age || '-'}</span></div>
@@ -735,8 +726,7 @@
                         </div>
                       ))}
 
-                      <div className="flex justify-between items-end border-t border-slate-200 pt-3 mt-6 text-xs text-slate-400">
-                        <span>Generated for clinical documentation purposes</span>
+                      <div className="flex justify-end border-t border-slate-200 pt-3 mt-6 text-xs text-slate-400">
                         <span className="border-t border-slate-700 pt-1 w-32 text-center text-slate-600">Signature</span>
                       </div>
                     </div>

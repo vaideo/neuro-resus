@@ -19,15 +19,17 @@ public class MainActivity extends Activity {
 
     private WebView webView;
 
-    /** Bridges window.AndroidPrint.print() calls from the WebView to the system print dialog. */
+    /** Bridges window.AndroidPrint.print(jobName) calls from the WebView to the system print dialog. */
     private class PrintBridge {
         @JavascriptInterface
-        public void print() {
+        public void print(String jobName) {
+            final String name = (jobName == null || jobName.trim().isEmpty())
+                ? "Prescription_" + System.currentTimeMillis()
+                : jobName;
             runOnUiThread(() -> {
                 PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
-                String jobName = "Prescription_" + System.currentTimeMillis();
-                PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(jobName);
-                printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+                PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(name);
+                printManager.print(name, printAdapter, new PrintAttributes.Builder().build());
             });
         }
     }
