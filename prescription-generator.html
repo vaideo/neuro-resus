@@ -12,6 +12,7 @@
     --accent:#2563eb;
     --bg:#f3f5f7;
     --panel:#ffffff;
+    --rx-letterhead-space:38mm; /* blank space reserved for pre-printed letterhead header */
   }
   *{box-sizing:border-box;}
   body{
@@ -215,7 +216,7 @@
       left:0;
       width:100%;
       border:none;
-      padding:0 8mm;
+      padding:var(--rx-letterhead-space) 8mm 8mm;
     }
     header.app-title, .tabs, .action-bar{display:none !important;}
   }
