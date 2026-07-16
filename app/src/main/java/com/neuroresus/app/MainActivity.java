@@ -2,7 +2,12 @@ package com.neuroresus.app;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -13,6 +18,19 @@ import android.graphics.Color;
 public class MainActivity extends Activity {
 
     private WebView webView;
+
+    /** Bridges window.AndroidPrint.print() calls from the WebView to the system print dialog. */
+    private class PrintBridge {
+        @JavascriptInterface
+        public void print() {
+            runOnUiThread(() -> {
+                PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                String jobName = "Prescription_" + System.currentTimeMillis();
+                PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(jobName);
+                printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+            });
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -41,6 +59,7 @@ public class MainActivity extends Activity {
         // Keep pages inside the app (no opening external browser)
         webView.setWebViewClient(new WebViewClient());
         webView.setBackgroundColor(Color.WHITE);
+        webView.addJavascriptInterface(new PrintBridge(), "AndroidPrint");
 
         // Load the bundled HTML app
         webView.loadUrl("file:///android_asset/index.html");
