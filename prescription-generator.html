@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prescription Generator</title>
+<style>
+  :root{
+    --ink:#1a2b3c;
+    --muted:#5c6b7a;
+    --line:#c9d2da;
+    --accent:#2563eb;
+    --bg:#f3f5f7;
+    --panel:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header.app-title{
+    padding:18px 24px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+  }
+  header.app-title h1{
+    margin:0;
+    font-size:20px;
+  }
+  header.app-title p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .layout{
+    display:flex;
+    gap:20px;
+    padding:20px;
+    max-width:1400px;
+    margin:0 auto;
+    align-items:flex-start;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:20px;
+  }
+  #form-panel{
+    flex:1 1 380px;
+    max-width:420px;
+  }
+  #preview-panel{
+    flex:2 1 600px;
+  }
+  .panel h2{
+    margin-top:0;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--muted);
+  }
+  .field{
+    margin-bottom:14px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .field input,
+  .field textarea,
+  .field select{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    font-family:inherit;
+    font-size:14px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .field textarea{
+    resize:vertical;
+    min-height:60px;
+  }
+  .row-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  fieldset{
+    border:1px solid var(--line);
+    border-radius:6px;
+    margin:0 0 16px;
+    padding:12px 14px 4px;
+  }
+  legend{
+    font-size:12px;
+    font-weight:700;
+    color:var(--accent);
+    padding:0 6px;
+  }
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:8px;
+  }
+  button{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    padding:10px 16px;
+    font-size:14px;
+    font-weight:600;
+  }
+  #print-btn{
+    background:var(--accent);
+    color:#fff;
+    flex:1;
+  }
+  #clear-btn{
+    background:#eef0f2;
+    color:var(--ink);
+  }
+  #print-btn:hover{background:#1d4ed8;}
+  #clear-btn:hover{background:#e2e6ea;}
+
+  /* Prescription sheet */
+  #rx-sheet{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:28px 32px;
+    min-height:600px;
+  }
+  .rx-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:3px solid var(--accent);
+    padding-bottom:12px;
+    margin-bottom:16px;
+  }
+  .rx-header .clinic-name{
+    font-size:22px;
+    font-weight:700;
+    color:var(--accent);
+    margin:0;
+  }
+  .rx-header .clinic-sub{
+    font-size:12px;
+    color:var(--muted);
+    margin:2px 0 0;
+  }
+  .rx-header .doctor-block{
+    text-align:right;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .rx-header .doctor-name{
+    font-size:14px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .patient-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px 16px;
+    background:#f7f9fb;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:10px 14px;
+    margin-bottom:18px;
+    font-size:13px;
+  }
+  .patient-strip div span.k{
+    display:block;
+    color:var(--muted);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+  }
+  .patient-strip div span.v{
+    font-weight:600;
+    word-break:break-word;
+  }
+  .rx-section{
+    margin-bottom:16px;
+  }
+  .rx-section h3{
+    margin:0 0 6px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--accent);
+    border-bottom:1px solid var(--line);
+    padding-bottom:4px;
+  }
+  .rx-section .content{
+    font-size:14px;
+    white-space:pre-wrap;
+    line-height:1.5;
+    min-height:18px;
+  }
+  .rx-section.empty .content{
+    color:#aab2ba;
+    font-style:italic;
+  }
+  .rx-treatment .content::before{
+    content:"℞ ";
+    font-weight:700;
+    font-size:18px;
+    color:var(--accent);
+  }
+  .rx-footer{
+    margin-top:40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-top:1px solid var(--line);
+    padding-top:10px;
+  }
+  .rx-footer .sign-line{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .rx-footer .sign-box{
+    border-top:1px solid var(--ink);
+    width:200px;
+    margin-bottom:4px;
+  }
+
+  @media print{
+    body *{visibility:hidden;}
+    #rx-sheet, #rx-sheet *{visibility:visible;}
+    #rx-sheet{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      border:none;
+      padding:0 10mm;
+    }
+    header.app-title, #form-panel, .actions{display:none !important;}
+  }
+
+  @media (max-width:900px){
+    .layout{flex-direction:column;}
+    #form-panel{max-width:none;}
+    .patient-strip{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-title">
+  <h1>Prescription Generator</h1>
+  <p>Enter patient details, preview the prescription, and print.</p>
+</header>
+
+<div class="layout">
+  <section class="panel" id="form-panel">
+    <h2>Clinic / Doctor</h2>
+    <div class="row-2">
+      <div class="field">
+        <label for="clinicName">Clinic / Hospital Name</label>
+        <input type="text" id="clinicName" placeholder="e.g. City Neuro Clinic">
+      </div>
+      <div class="field">
+        <label for="doctorName">Doctor Name</label>
+        <input type="text" id="doctorName" placeholder="e.g. Dr. A. Sharma, MD">
+      </div>
+    </div>
+    <div class="field">
+      <label for="doctorReg">Registration No. / Qualification (optional)</label>
+      <input type="text" id="doctorReg" placeholder="e.g. Reg. No. 12345, MBBS, MD (Neurology)">
+    </div>
+
+    <h2>Patient Details</h2>
+    <div class="row-2">
+      <div class="field">
+        <label for="date">Date</label>
+        <input type="date" id="date">
+      </div>
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Patient full name">
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="age">Age</label>
+        <input type="text" id="age" placeholder="e.g. 45 yrs">
+      </div>
+      <div class="field">
+        <label for="gender">Gender</label>
+        <select id="gender">
+          <option value="">Select</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Clinical Notes</legend>
+      <div class="field">
+        <label for="history">History</label>
+        <textarea id="history" placeholder="Presenting complaints, past history, etc."></textarea>
+      </div>
+      <div class="field">
+        <label for="examination">Examination</label>
+        <textarea id="examination" placeholder="Vitals, general and systemic examination findings"></textarea>
+      </div>
+      <div class="field">
+        <label for="diagnosis">Diagnosis</label>
+        <textarea id="diagnosis" placeholder="Provisional / final diagnosis"></textarea>
+      </div>
+      <div class="field">
+        <label for="investigations">Investigations</label>
+        <textarea id="investigations" placeholder="Labs, imaging, tests advised"></textarea>
+      </div>
+      <div class="field">
+        <label for="treatment">Treatment</label>
+        <textarea id="treatment" placeholder="Medicines, dosage, frequency, duration"></textarea>
+      </div>
+      <div class="field">
+        <label for="advice">Advice</label>
+        <textarea id="advice" placeholder="Lifestyle advice, follow-up date, warnings"></textarea>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button id="print-btn" type="button">Print Prescription</button>
+      <button id="clear-btn" type="button">Clear</button>
+    </div>
+  </section>
+
+  <section class="panel" id="preview-panel">
+    <h2>Preview</h2>
+    <div id="rx-sheet">
+      <div class="rx-header">
+        <div>
+          <p class="clinic-name" id="out-clinicName">Clinic / Hospital Name</p>
+          <p class="clinic-sub" id="out-clinicSub">&nbsp;</p>
+        </div>
+        <div class="doctor-block">
+          <div class="doctor-name" id="out-doctorName">Doctor Name</div>
+          <div id="out-doctorReg">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="patient-strip">
+        <div><span class="k">Date</span><span class="v" id="out-date">-</span></div>
+        <div><span class="k">Name</span><span class="v" id="out-name">-</span></div>
+        <div><span class="k">Age</span><span class="v" id="out-age">-</span></div>
+        <div><span class="k">Gender</span><span class="v" id="out-gender">-</span></div>
+      </div>
+
+      <div class="rx-section empty" id="sec-history">
+        <h3>History</h3>
+        <div class="content" id="out-history">-</div>
+      </div>
+      <div class="rx-section empty" id="sec-examination">
+        <h3>Examination</h3>
+        <div class="content" id="out-examination">-</div>
+      </div>
+      <div class="rx-section empty" id="sec-diagnosis">
+        <h3>Diagnosis</h3>
+        <div class="content" id="out-diagnosis">-</div>
+      </div>
+      <div class="rx-section empty" id="sec-investigations">
+        <h3>Investigations</h3>
+        <div class="content" id="out-investigations">-</div>
+      </div>
+      <div class="rx-section rx-treatment empty" id="sec-treatment">
+        <h3>Treatment</h3>
+        <div class="content" id="out-treatment">-</div>
+      </div>
+      <div class="rx-section empty" id="sec-advice">
+        <h3>Advice</h3>
+        <div class="content" id="out-advice">-</div>
+      </div>
+
+      <div class="rx-footer">
+        <div class="sign-line">Generated for clinical documentation purposes</div>
+        <div class="sign-line">
+          <div class="sign-box"></div>
+          Signature
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var textFields = ["clinicName","doctorName","doctorReg","name","age","gender"];
+  var noteFields = ["history","examination","diagnosis","investigations","treatment","advice"];
+
+  var dateInput = document.getElementById("date");
+  var today = new Date();
+  dateInput.value = today.toISOString().slice(0,10);
+
+  function formatDate(value){
+    if(!value) return "-";
+    var parts = value.split("-");
+    if(parts.length !== 3) return value;
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    var opts = { day:"2-digit", month:"short", year:"numeric" };
+    return d.toLocaleDateString("en-GB", opts);
+  }
+
+  function updatePreview(){
+    document.getElementById("out-clinicName").textContent =
+      document.getElementById("clinicName").value.trim() || "Clinic / Hospital Name";
+    document.getElementById("out-doctorName").textContent =
+      document.getElementById("doctorName").value.trim() || "Doctor Name";
+    document.getElementById("out-doctorReg").textContent =
+      document.getElementById("doctorReg").value.trim() || "";
+
+    document.getElementById("out-date").textContent = formatDate(dateInput.value);
+    document.getElementById("out-name").textContent =
+      document.getElementById("name").value.trim() || "-";
+    document.getElementById("out-age").textContent =
+      document.getElementById("age").value.trim() || "-";
+    document.getElementById("out-gender").textContent =
+      document.getElementById("gender").value || "-";
+
+    noteFields.forEach(function(id){
+      var val = document.getElementById(id).value.trim();
+      var out = document.getElementById("out-" + id);
+      var section = document.getElementById("sec-" + id);
+      out.textContent = val || "-";
+      if(val){
+        section.classList.remove("empty");
+      } else {
+        section.classList.add("empty");
+      }
+    });
+  }
+
+  var allInputs = document.querySelectorAll("#form-panel input, #form-panel textarea, #form-panel select");
+  allInputs.forEach(function(el){
+    el.addEventListener("input", updatePreview);
+    el.addEventListener("change", updatePreview);
+  });
+
+  document.getElementById("print-btn").addEventListener("click", function(){
+    window.print();
+  });
+
+  document.getElementById("clear-btn").addEventListener("click", function(){
+    if(!confirm("Clear all fields?")) return;
+    textFields.concat(noteFields).forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    dateInput.value = today.toISOString().slice(0,10);
+    updatePreview();
+  });
+
+  updatePreview();
+})();
+</script>
+
+</body>
+</html>
